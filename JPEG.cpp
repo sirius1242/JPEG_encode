@@ -1,4 +1,3 @@
-#include "JPEG.hpp"
 #include <iostream>
 #include <cmath>
 #include <cstring>
@@ -12,7 +11,7 @@ using namespace std;
 //void quant(double **(dct_r), int **(quant_r));
 //void jpeg_encode(char buffer[], int width, int height, ofstream result);
 
-void mulmat(double A[], double *mat[], double B[])
+void mulmat(double A[], double mat[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double B[])
 {
     double temp = 0;
     for (int i=0; i<JPEG_BLOCK_SIZE; i++)
@@ -24,7 +23,7 @@ void mulmat(double A[], double *mat[], double B[])
     }
 }
 
-void dct(char *origin[], double *dct_r[])
+void dct(char origin[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
 {
     double temp[JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE];
     double dct_mat[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
@@ -58,7 +57,7 @@ void dct(char *origin[], double *dct_r[])
     }
 }
 
-void quant(double *dct_r[], int *quant_r[])
+void quant(double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
 {
     int Q_mat[8][8] = {{16,11,10,16,24,40,51,61},
                     {12,12,14,19,26,58,60,55},
@@ -94,7 +93,7 @@ int dc_entro(char code[], int PRE_DC, int DC)
     return strlen(code);
 }
 
-void zigzag(int *quant_r[], int zigzag_r[]){
+void zigzag(int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int zigzag_r[]){
 	int pot_x[8*8]={0,0,1,2,1,0,0,1,2,3,4,3,2,1,0,0,1,2,3,4,5,6,5,4,3,2,1,0,0,1,2,3,4,5,6,7,7,6,5,4,3,2,1,2,3,4,5,6,7,7,6,5,4,3,4,5,6,7,7,6,5,6,7,7};
 	int pot_y[8*8]={0,1,0,0,1,2,3,2,1,0,0,1,2,3,4,5,4,3,2,1,0,0,1,2,3,4,5,6,7,6,5,4,3,2,1,0,1,2,3,4,5,6,7,7,6,5,4,3,2,3,4,5,6,7,7,6,5,4,5,6,7,7,6,7};
 	for (int i=0; i<JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE; i++)
@@ -137,7 +136,7 @@ void act_ac_entro(char code[], int zero_num, int val)
     strcat(code, temp);
 }
 
-int ac_entro(char code[], int *quant_r[])
+int ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
 {
     int zigzag_r[JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE];
     int last_no0;
@@ -145,7 +144,7 @@ int ac_entro(char code[], int *quant_r[])
     int val;
     zigzag(quant_r, zigzag_r);
     for (int i=JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE; i>0; i--)
-        if (zigzag_r != 0)
+        if (zigzag_r[i] != 0)
         {
             last_no0 = i;
             break;
@@ -169,8 +168,30 @@ int ac_entro(char code[], int *quant_r[])
     return (strlen(code));
 }
 
-void jpeg_encode(char buffer[], int width, int height, ofstream result)
+int main(int argc, char *argv[])
 {
+    FILE *data;
+    char ainput[] = "lady.dat";
+    char aoutput[] = "lady_pre.dat";
+    char *pinput = ainput;
+    char *poutput = aoutput;
+    if (argc >= 2)
+        pinput = argv[1];
+    if (argc >= 3)
+        poutput = argv[2];
+    data = fopen(pinput, "r");
+    //ifstream input_data (pinput, ios_base::binary);
+    if (data == NULL)
+    {
+        fprintf(stderr, "Input file %s load error!", pinput);
+        exit(-1);
+    }
+    int width = 256;
+    int height = 256;
+    char buffer[width*height];
+    fread(buffer, width*height, 1, data);
+    fclose(data);
+    //jpeg_encode(buffer, width, height, poutput);
     char block[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
     double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
     int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
@@ -195,6 +216,7 @@ void jpeg_encode(char buffer[], int width, int height, ofstream result)
         }
     int jpeg_len = 0;
     int count = 0;
+    ofstream result(poutput, ios_base::binary);
     for (int i=0; i<entro_len; i++)
     {
         result_c[jpeg_len] = code[i];
@@ -225,11 +247,11 @@ void jpeg_encode(char buffer[], int width, int height, ofstream result)
     
     if(jpeg_len != (jpeg_len/8*8))
     {
-        target = 0;
+        int target = 0;
         for (int i=0; i<jpeg_len-(jpeg_len/8*8); i++)
         {
-            char tmp = result_c[i*8+j]-'0';
-            target+=tmp<<(7-j);
+            char tmp = result_c[(jpeg_len/8*8)+i]-'0';
+            target+=tmp<<(7-i);
         }
         char target_r = (char)target;
         result << target_r;
@@ -245,31 +267,5 @@ void jpeg_encode(char buffer[], int width, int height, ofstream result)
         }
     }
     */
-}
-
-int main(int argc, char *argv[])
-{
-    FILE *data;
-    char ainput[] = "lady.dat";
-    char aoutput[] = "lady.jpg";
-    char *pinput = ainput;
-    char *poutput = aoutput;
-    if (argc >= 2)
-        pinput = argv[1];
-    if (argc >= 3)
-        poutput = argv[2];
-    data = fopen(pinput, "r");
-    //ifstream input_data (pinput, ios_base::binary);
-    if (data == NULL)
-    {
-        fprintf(stderr, "Input file %s load error!", pinput);
-        exit(-1);
-    }
-    int width = 256;
-    int height = 256;
-    char buffer[width*height];
-    fread(buffer, width*height, 1, data);
-    fclose(data);
-    ofstream result(poutput, ios_base::binary);
-    jpeg_encode(buffer, width, height, result);
+    return 0;
 }
