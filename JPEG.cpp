@@ -160,7 +160,7 @@ int act_ac_entro(char code[], int zero_num, int val)
 int ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
 {
     int zigzag_r[JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE];
-    int last_no0;
+    int last_no0 = 0;
     int zero_num;
     int val;
     int leninc = 0;
