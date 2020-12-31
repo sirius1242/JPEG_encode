@@ -84,15 +84,17 @@ int dc_entro(char code[], int PRE_DC, int DC)
     else
         len = (int)floor(log2(abs(diff))) + 1;
     strcat(code, dc_len_table[len]);
-    int unit = (diff>0)?diff:diff+(int)pow(2, len)-1;
+    int unit = (diff>0)?diff:(diff+(2<<(len-1))-1);
     char temp[16];
     memset(temp, 0, 16*sizeof(char));
-    for (int tmp = unit, i = 0; tmp > 0; tmp /= 2, i++)
+    //for (int tmp = unit, i = 0; tmp >= 0; tmp /= 2, i++)
+    //    temp[i] = (tmp%2)?'1':'0';
+    for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--)
         temp[i] = (tmp%2)?'1':'0';
-    //temp[len] = '\0';
+    temp[len] = '\0';
     strcat(code, temp);
     //cout << temp << " ";
-    cout << strlen(code) << " ";
+    //cout << strlen(code) << " ";
     return strlen(code);
 }
 
@@ -133,13 +135,13 @@ void act_ac_entro(char code[], int zero_num, int val)
             len = 0;
         else
             len = (int)floor(log2(abs(val))) + 1;
-        strcpy(temp, ac_table[zero_num][len]);
-        strcat(code, temp);
-        int unit = (val>0)?val:(val+(int)pow(2, len)-1);
+        //strcpy(temp, ac_table[zero_num][len]);
+        strcat(code, ac_table[zero_num][len]);
+        int unit = (val>0)?val:(val+(2<<(len-1))-1);
         memset(temp, 0, 30*sizeof(char));
-        for (int tmp = unit, i = 0; tmp > 0; tmp /= 2, i++)
+        for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--)
             temp[i] = (tmp%2)?'1':'0';
-        //temp[len] = '\0';
+        temp[len] = '\0';
     }
     strcat(code, temp);
 }
@@ -224,12 +226,14 @@ int main(int argc, char *argv[])
             quant(dct_r, quant_r);
             int DC = quant_r[0][0];
             dc_entro(code, PRE_DC, DC);
-            entro_len += ac_entro(code, quant_r);
+            ac_entro(code, quant_r);
             PRE_DC = DC;
         }
+    entro_len = strlen(code);
     int jpeg_len = 0;
     int count = 0;
     ofstream result(poutput, ios_base::binary);
+    //cout << entro_len << endl;
     for (int i=0; i<entro_len; i++)
     {
         result_c[jpeg_len] = code[i];
@@ -258,7 +262,7 @@ int main(int argc, char *argv[])
         result << target_r;
     }
     
-    if(jpeg_len != (jpeg_len/8*8))
+    if(jpeg_len % 8 != 0)
     {
         int target = 0;
         for (int i=0; i<jpeg_len-(jpeg_len/8*8); i++)
