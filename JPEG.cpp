@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
             entro_len += ac_entro(code, quant_r);
             PRE_DC = DC;
         }
-    //entro_len = strlen(code);
+    entro_len = strlen(code);
     cout << entro_len << endl;
     int jpeg_len = 0;
     int count = 0;
