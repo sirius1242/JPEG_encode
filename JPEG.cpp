@@ -76,7 +76,7 @@ void quant(double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int quant_r[JPEG_BLOC
 int dc_entro(char code[], int PRE_DC, int DC)
 {
     char dc_len_table[12][10] = {"00","010", "011","100","101","110","1110","11110","111110","1111110","11111110","111111110"};
-    code[0] = '\0';
+    //code[0] = '\0';
     int diff = DC - PRE_DC;
     int len;
     if (diff == 0)
@@ -86,10 +86,13 @@ int dc_entro(char code[], int PRE_DC, int DC)
     strcat(code, dc_len_table[len]);
     int unit = (diff>0)?diff:diff+(int)pow(2, len)-1;
     char temp[16];
+    memset(temp, 0, 16*sizeof(char));
     for (int tmp = unit, i = 0; tmp > 0; tmp /= 2, i++)
         temp[i] = (tmp%2)?'1':'0';
-    temp[len] = '\0';
+    //temp[len] = '\0';
     strcat(code, temp);
+    //cout << temp << " ";
+    cout << strlen(code) << " ";
     return strlen(code);
 }
 
@@ -120,18 +123,23 @@ void act_ac_entro(char code[], int zero_num, int val)
 								{"","11111111000", "1111111111100010", "1111111111100011", "1111111111100100", "1111111111100101", "1111111111100110", "1111111111100111", "1111111111101000", "1111111111101001", "1111111111101010"},
 								{"","1111111111101011", "1111111111101100", "1111111111101101", "1111111111101110", "1111111111101111", "1111111111110000", "1111111111110001", "1111111111110010", "1111111111110011", "1111111111110100"},
 								{"11111111001", "1111111111110101", "1111111111110110", "1111111111110111", "1111111111111000", "1111111111111001", "1111111111111010", "1111111111111011", "1111111111111100", "1111111111111101", "1111111111111110"}};
-    char temp[20];
+    char temp[30];
     if ((val == 0)&&(zero_num != 15))
         strcpy(temp, "1010");
     else
     {
-        int len = (int)floor(log2(abs(val))) + 1;
+        int len;
+        if (val == 0)
+            len = 0;
+        else
+            len = (int)floor(log2(abs(val))) + 1;
         strcpy(temp, ac_table[zero_num][len]);
         strcat(code, temp);
         int unit = (val>0)?val:(val+(int)pow(2, len)-1);
+        memset(temp, 0, 30*sizeof(char));
         for (int tmp = unit, i = 0; tmp > 0; tmp /= 2, i++)
-        temp[i] = (tmp%2)?'1':'0';
-        temp[len] = '\0';
+            temp[i] = (tmp%2)?'1':'0';
+        //temp[len] = '\0';
     }
     strcat(code, temp);
 }
@@ -168,6 +176,7 @@ int ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
     return (strlen(code));
 }
 
+//int main()
 int main(int argc, char *argv[])
 {
     FILE *data;
@@ -195,12 +204,16 @@ int main(int argc, char *argv[])
     char block[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
     double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
     int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
-    char code[5000000];
-    char result_c[5000000];
+    char *code;//[5000000];
+    char *result_c;//[5000000];
+    code = (char*)malloc(5000000*sizeof(char));
+    result_c = (char*)malloc(5000000*sizeof(char));
     int PRE_DC = 0;
     //int dc_entro_len = 0;
     int entro_len = 0;
     int total_len = 0;
+    memset(code, 0, 5000000*sizeof(char));
+    memset(result_c, 0, 5000000*sizeof(char));
     for (int m=0; m<width/JPEG_BLOCK_SIZE; m++)
         for (int n=0; n<height/JPEG_BLOCK_SIZE; n++) // deal with every block
         {
