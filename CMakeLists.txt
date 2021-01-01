@@ -2,5 +2,12 @@ cmake_minimum_required(VERSION 3.18)
 project(jpeg_r)
 
 file(GLOB SOURCES ${CMAKE_CURRENT_LIST_DIR}/JPEG.cpp)
+file(GLOB GENSOURCES ${CMAKE_CURRENT_LIST_DIR}/GENJPG.cpp)
+file(GLOB GENHEADERS ${CMAKE_CURRENT_LIST_DIR}/Global.h)
+file(COPY ${CMAKE_CURRENT_LIST_DIR}/ac.tab DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+file(COPY ${CMAKE_CURRENT_LIST_DIR}/dc.tab DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
 add_executable(jpeg_r ${SOURCES})
+add_executable(GENJPG ${GENSOURCES} ${GENHEADERS})
+
 target_link_libraries(jpeg_r ${MATH_LIBRARIES})
+target_link_libraries(GENJPG ${MATH_LIBRARIES})
