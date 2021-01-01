@@ -206,15 +206,12 @@ int main(int argc, char *argv[])
     double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
     int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
     char *code;//[5000000];
-    char *result_c;//[5000000];
     code = (char*)malloc(5000000*sizeof(char));
-    result_c = (char*)malloc(5000000*sizeof(char));
     int PRE_DC = 0;
     //int dc_entro_len = 0;
     int entro_len = 0;
     int total_len = 0;
     memset(code, 0, 5000000*sizeof(char));
-    memset(result_c, 0, 5000000*sizeof(char));
     for (int m=0; m<width/JPEG_BLOCK_SIZE; m++)
         for (int n=0; n<height/JPEG_BLOCK_SIZE; n++) // deal with every block
         {
@@ -229,40 +226,14 @@ int main(int argc, char *argv[])
             PRE_DC = DC;
         }
     entro_len = strlen(code);
-    int jpeg_len = 0;
     int count = 0;
     ofstream result(poutput, ios_base::binary);
-    //cout << entro_len << endl;
-    /*
-    for (int i=0; i<entro_len; i++)
-    {
-        result_c[jpeg_len] = code[i];
-        jpeg_len++;
-        if (code[i] == '0')
-            count = 0;
-        else
-            count++;
-        if ((count>=8)&&(jpeg_len%8==0))
-        {
-            for (int j=0; j<8; j++)
-                result_c[jpeg_len++] = '0';
-            count = 0;
-        }
-    }
-    */
 
-    for (int i=0; i<entro_len/8; i++)
+    for (int i=0; i<entro_len/8; i++) // write every 8 codes as byte into file
     {
         int target = 0;
         for (int j=0; j<8; j++)
         {
-            /*
-            if((count>=8)&&(j==0))
-            {
-                result << '\0';
-                count = 0;
-            }
-            */
             if (code[i*8+j] == '0')
                 count = 0;
             else
@@ -272,7 +243,7 @@ int main(int argc, char *argv[])
         }
         char target_r = (char)target;
         result << target_r;
-        if(count >= 8)
+        if(count >= 8) // if continuous 8 '1's, insert a 0 byte into file
         {
             result << '\0';
             count = 0;
@@ -280,7 +251,7 @@ int main(int argc, char *argv[])
     }
     
     int remain;
-    if((remain = entro_len % 8) != 0)
+    if((remain = entro_len % 8) != 0) // pad the last unaligned byte
     {
         int target = 0;
         for (int i=0; i<remain; i++)
@@ -291,16 +262,5 @@ int main(int argc, char *argv[])
         char target_r = (char)target;
         result << target_r;
     }
-    /*
-    if (input_data)
-    {
-        char *buffer = new char[JPEG_BLOCK_SIZE];
-        while (input_data.peek() != EOF)
-        {
-            memset(buffer, 0, sizeof(char)*JPEG_BLOCK_SIZE);
-            input_data.read(buffer, )
-        }
-    }
-    */
     return 0;
 }
