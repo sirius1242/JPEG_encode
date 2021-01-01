@@ -5,13 +5,10 @@
 #include <fstream>
 
 #define pi 3.1415926
-#define JPEG_BLOCK_SIZE 8
+#define JPEG_BLOCK_SIZE 8 // no change for current
 using namespace std;
-//void dct(char **(origin), double **(dct_r));
-//void quant(double **(dct_r), int **(quant_r));
-//void jpeg_encode(char buffer[], int width, int height, ofstream result);
 
-void mulmat(double A[], double mat[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double B[])
+void mulmat(double A[], double mat[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double B[]) // transform array by multiple to matrix
 {
     double temp = 0;
     for (int i=0; i<JPEG_BLOCK_SIZE; i++)
@@ -23,7 +20,7 @@ void mulmat(double A[], double mat[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double B[]
     }
 }
 
-void dct(char origin[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
+void dct(char origin[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE]) // DCT transform
 {
     double temp[JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE];
     double dct_mat[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
@@ -57,7 +54,7 @@ void dct(char origin[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], double dct_r[JPEG_BLOCK_
     }
 }
 
-void quant(double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
+void quant(double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE]) // quant the DC transform result
 {
     int Q_mat[8][8] = {{16,11,10,16,24,40,51,61},
                     {12,12,14,19,26,58,60,55},
@@ -73,18 +70,17 @@ void quant(double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int quant_r[JPEG_BLOC
             quant_r[i][j] = dct_r[i][j]/Q_mat[i][j] + ((dct_r[i][j] > 0)?0.5:(dct_r[i][j] < 0)?(-0.5):0.0);
 }
 
-void dc_entro(char code[], int PRE_DC, int DC)
+void dc_entro(char code[], int PRE_DC, int DC) // entropy code the DC component
 {
     char dc_len_table[12][10] = {"00","010", "011","100","101","110","1110","11110","111110","1111110","11111110","111111110"};
-    //code[0] = '\0';
-    int diff = DC - PRE_DC;
+    int diff = DC - PRE_DC; // diff the DC component with previous block
     int len;
-    if (diff == 0)
+    if (diff == 0) // 0 can't do log2 calculation
         len = 0;
     else
-        len = (int)floor(log2(abs(diff))) + 1;
+        len = (int)floor(log2(abs(diff))) + 1; // length of binary of absolute value
     strcat(code, dc_len_table[len]);
-    int unit = (diff>0)?diff:(diff+(2<<(len-1))-1);
+    int unit = (diff>0)?diff:(diff+(2<<(len-1))-1); // mapping (-[2^(len)], -[2^(len-1)]) to (0, 2^(len-1)-1)
     char temp[16];
     memset(temp, 0, 16*sizeof(char));
     //for (int tmp = unit, i = 0; tmp >= 0; tmp /= 2, i++)
@@ -92,7 +88,7 @@ void dc_entro(char code[], int PRE_DC, int DC)
     //for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--)
     //    temp[i] = (tmp%2)?'1':'0';
     //temp[len] = '\0';
-    for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--)
+    for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--) // convert mapped value into binary string with length "len"
         temp[i] = (tmp%2)?'1':'0';
     temp[len] = '\0';
     strcat(code, temp);
@@ -100,7 +96,8 @@ void dc_entro(char code[], int PRE_DC, int DC)
     //cout << strlen(code) << " ";
 }
 
-void zigzag(int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int zigzag_r[]){
+void zigzag(int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int zigzag_r[]) // zigzag one block
+{
 	int pot_x[8*8]={0,0,1,2,1,0,0,1,2,3,4,3,2,1,0,0,1,2,3,4,5,6,5,4,3,2,1,0,0,1,2,3,4,5,6,7,7,6,5,4,3,2,1,2,3,4,5,6,7,7,6,5,4,3,4,5,6,7,7,6,5,6,7,7};
 	int pot_y[8*8]={0,1,0,0,1,2,3,2,1,0,0,1,2,3,4,5,4,3,2,1,0,0,1,2,3,4,5,6,7,6,5,4,3,2,1,0,1,2,3,4,5,6,7,7,6,5,4,3,2,3,4,5,6,7,7,6,5,4,5,6,7,7,6,7};
 	for (int i=0; i<JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE; i++)
@@ -109,7 +106,7 @@ void zigzag(int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int zigzag_r[]){
 	}
 }
 
-void act_ac_entro(char code[], int zero_num, int val)
+void act_ac_entro(char code[], int zero_num, int val) // entropy code every AC component
 {
     char ac_table[16][11][20]={{"1010","00", "01", "100", "1011", "11010", "1111000", "11111000", "1111110110", "1111111110000010", "1111111110000011"},
 								{"","1100", "11011", "1111001", "111110110", "11111110110", "1111111110000100", "1111111110000101", "1111111110000110", "1111111110000111", "1111111110001000"},
@@ -128,34 +125,34 @@ void act_ac_entro(char code[], int zero_num, int val)
 								{"","1111111111101011", "1111111111101100", "1111111111101101", "1111111111101110", "1111111111101111", "1111111111110000", "1111111111110001", "1111111111110010", "1111111111110011", "1111111111110100"},
 								{"11111111001", "1111111111110101", "1111111111110110", "1111111111110111", "1111111111111000", "1111111111111001", "1111111111111010", "1111111111111011", "1111111111111100", "1111111111111101", "1111111111111110"}};
     char temp[30];
-    if ((val == 0)&&(zero_num != 15))
+    if ((val == 0)&&(zero_num != 15)) // block end
         strcpy(temp, "1010");
     else
     {
         int len;
-        if (val == 0)
+        if (val == 0) // zero can't do log2 calculation
             len = 0;
         else
-            len = (int)floor(log2(abs(val))) + 1;
+            len = (int)floor(log2(abs(val))) + 1; // length of binary of absolute value
         //strcpy(temp, ac_table[zero_num][len]);
         strcat(code, ac_table[zero_num][len]);
-        int unit = (val>0)?val:(val+(2<<(len-1))-1);
+        int unit = (val>0)?val:(val+(2<<(len-1))-1); // mapping (-[2^(len)], -[2^(len-1)]) to (0, 2^(len-1)-1)
         memset(temp, 0, 30*sizeof(char));
-        for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--)
+        for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--) // convert mapped value into binary string with length "len"
             temp[i] = (tmp%2)?'1':'0';
         temp[len] = '\0';
     }
     strcat(code, temp);
 }
 
-void ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
+void ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE]) // entropy code all AC component in one block
 {
     int zigzag_r[JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE];
     int last_no0 = 0;
     int zero_num;
     int val;
     zigzag(quant_r, zigzag_r);
-    for (int i=JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE-1; i>0; i--)
+    for (int i=JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE-1; i>0; i--) // find block end position
         if (zigzag_r[i] != 0)
         {
             last_no0 = i;
@@ -166,14 +163,14 @@ void ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
     {
         if ((zigzag_r[i] == 0)&&(zero_num < 15))
             zero_num++;
-        else
+        else // entropy code when met non-zero element (RLE) or continuous 15 zeros
         {
             val = zigzag_r[i];
             act_ac_entro(code, zero_num, val);
             zero_num = (val==0)?1:0;
         }
     }
-    if((last_no0<63)&&(last_no0>=0))
+    if((last_no0<63)&&(last_no0>=0)) // entropy code block end
         act_ac_entro(code, 0, 0);
 }
 
@@ -198,15 +195,15 @@ int main(int argc, char *argv[])
     }
     int width = 256;
     int height = 256;
-    char buffer[width*height];
-    fread(buffer, width*height, 1, data);
+    char buffer[width*height]; // store origin data
+    fread(buffer, width*height, 1, data); // read the input file
     fclose(data);
     //jpeg_encode(buffer, width, height, poutput);
-    char block[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
-    double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
-    int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE];
-    char *code;//[5000000];
-    code = (char*)malloc(5000000*sizeof(char));
+    char block[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE]; // buffer when dealing with blocks
+    double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE]; // store DCT result
+    int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE]; // store QUANT result
+    char *code;
+    code = (char*)malloc(5000000*sizeof(char)); //store entropy coding result
     int PRE_DC = 0;
     //int dc_entro_len = 0;
     int entro_len = 0;
@@ -220,7 +217,7 @@ int main(int argc, char *argv[])
                     block[i][j] = buffer[(m*JPEG_BLOCK_SIZE+i)*width+(n*JPEG_BLOCK_SIZE+j)] - 128;
             dct(block, dct_r);
             quant(dct_r, quant_r);
-            int DC = quant_r[0][0];
+            int DC = quant_r[0][0]; // DC component
             dc_entro(code, PRE_DC, DC);
             ac_entro(code, quant_r);
             PRE_DC = DC;
@@ -229,7 +226,7 @@ int main(int argc, char *argv[])
     int count = 0;
     ofstream result(poutput, ios_base::binary);
 
-    for (int i=0; i<entro_len/8; i++) // write every 8 codes as byte into file
+    for (int i=0; i<entro_len/8; i++) // write every 8 entropy codes as byte into file
     {
         int target = 0;
         for (int j=0; j<8; j++)
