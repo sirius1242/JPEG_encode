@@ -178,14 +178,29 @@ void ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE]) // ent
 int main(int argc, char *argv[])
 {
     FILE *data;
-    char ainput[] = "lady.dat";
-    char aoutput[] = "lady_pre.dat";
+    char ainput[] = "lady.dat"; // default input data file path
+    char aoutput[] = "lady_pre.dat"; //default output data file path
     char *pinput = ainput;
     char *poutput = aoutput;
+    int width = 256; // default input data width
+    int height = 256; // default output data width
     if (argc >= 2)
+    {
         pinput = argv[1];
+        if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))
+        {
+            cout << "usage: ./jpeg_r [input_file] [output_file] [width] [height]" <<endl;
+            exit(0);
+        }
+    }
     if (argc >= 3)
         poutput = argv[2];
+    if (argc >= 5) // resolution of input data
+    {
+        char *endptr;
+        width = strtol(argv[3], &endptr, 10);
+        height = strtol(argv[4], &endptr, 10);
+    }
     data = fopen(pinput, "r");
     //ifstream input_data (pinput, ios_base::binary);
     if (data == NULL)
@@ -193,8 +208,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Input file %s load error!", pinput);
         exit(-1);
     }
-    int width = 256;
-    int height = 256;
     char buffer[width*height]; // store origin data
     fread(buffer, width*height, 1, data); // read the input file
     fclose(data);
