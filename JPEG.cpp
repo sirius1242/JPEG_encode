@@ -73,19 +73,17 @@ void quant(double dct_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int quant_r[JPEG_BLOC
             quant_r[i][j] = dct_r[i][j]/Q_mat[i][j] + ((dct_r[i][j] > 0)?0.5:(dct_r[i][j] < 0)?(-0.5):0.0);
 }
 
-int dc_entro(char code[], int PRE_DC, int DC)
+void dc_entro(char code[], int PRE_DC, int DC)
 {
     char dc_len_table[12][10] = {"00","010", "011","100","101","110","1110","11110","111110","1111110","11111110","111111110"};
     //code[0] = '\0';
     int diff = DC - PRE_DC;
-    int leninc = 0;
     int len;
     if (diff == 0)
         len = 0;
     else
         len = (int)floor(log2(abs(diff))) + 1;
     strcat(code, dc_len_table[len]);
-    leninc += strlen(dc_len_table[len]);
     int unit = (diff>0)?diff:(diff+(2<<(len-1))-1);
     char temp[16];
     memset(temp, 0, 16*sizeof(char));
@@ -97,11 +95,9 @@ int dc_entro(char code[], int PRE_DC, int DC)
     for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--)
         temp[i] = (tmp%2)?'1':'0';
     temp[len] = '\0';
-    leninc += len;
     strcat(code, temp);
     //cout << temp << " ";
     //cout << strlen(code) << " ";
-    return leninc;
 }
 
 void zigzag(int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int zigzag_r[]){
@@ -113,7 +109,7 @@ void zigzag(int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE], int zigzag_r[]){
 	}
 }
 
-int act_ac_entro(char code[], int zero_num, int val)
+void act_ac_entro(char code[], int zero_num, int val)
 {
     char ac_table[16][11][20]={{"1010","00", "01", "100", "1011", "11010", "1111000", "11111000", "1111110110", "1111111110000010", "1111111110000011"},
 								{"","1100", "11011", "1111001", "111110110", "11111110110", "1111111110000100", "1111111110000101", "1111111110000110", "1111111110000111", "1111111110001000"},
@@ -132,7 +128,6 @@ int act_ac_entro(char code[], int zero_num, int val)
 								{"","1111111111101011", "1111111111101100", "1111111111101101", "1111111111101110", "1111111111101111", "1111111111110000", "1111111111110001", "1111111111110010", "1111111111110011", "1111111111110100"},
 								{"11111111001", "1111111111110101", "1111111111110110", "1111111111110111", "1111111111111000", "1111111111111001", "1111111111111010", "1111111111111011", "1111111111111100", "1111111111111101", "1111111111111110"}};
     char temp[30];
-    int leninc = 0;
     if ((val == 0)&&(zero_num != 15))
         strcpy(temp, "1010");
     else
@@ -144,26 +139,21 @@ int act_ac_entro(char code[], int zero_num, int val)
             len = (int)floor(log2(abs(val))) + 1;
         //strcpy(temp, ac_table[zero_num][len]);
         strcat(code, ac_table[zero_num][len]);
-        leninc += strlen(ac_table[zero_num][len]);
         int unit = (val>0)?val:(val+(2<<(len-1))-1);
         memset(temp, 0, 30*sizeof(char));
         for (int tmp = unit, i = len-1; i>=0; tmp /= 2, i--)
             temp[i] = (tmp%2)?'1':'0';
         temp[len] = '\0';
-        leninc += len;
     }
     strcat(code, temp);
-    leninc += strlen(temp);
-    return leninc;
 }
 
-int ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
+void ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
 {
     int zigzag_r[JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE];
     int last_no0 = 0;
     int zero_num;
     int val;
-    int leninc = 0;
     zigzag(quant_r, zigzag_r);
     for (int i=JPEG_BLOCK_SIZE*JPEG_BLOCK_SIZE-1; i>0; i--)
         if (zigzag_r[i] != 0)
@@ -179,15 +169,12 @@ int ac_entro(char code[], int quant_r[JPEG_BLOCK_SIZE][JPEG_BLOCK_SIZE])
         else
         {
             val = zigzag_r[i];
-            leninc += act_ac_entro(code, zero_num, val);
+            act_ac_entro(code, zero_num, val);
             zero_num = (val==0)?1:0;
         }
     }
     if((last_no0<63)&&(last_no0>=0))
-    {
-        leninc += act_ac_entro(code, 0, 0);
-    }
-    return leninc;
+        act_ac_entro(code, 0, 0);
 }
 
 //int main()
@@ -237,12 +224,11 @@ int main(int argc, char *argv[])
             dct(block, dct_r);
             quant(dct_r, quant_r);
             int DC = quant_r[0][0];
-            entro_len += dc_entro(code, PRE_DC, DC);
-            entro_len += ac_entro(code, quant_r);
+            dc_entro(code, PRE_DC, DC);
+            ac_entro(code, quant_r);
             PRE_DC = DC;
         }
     entro_len = strlen(code);
-    cout << entro_len << endl;
     int jpeg_len = 0;
     int count = 0;
     ofstream result(poutput, ios_base::binary);
