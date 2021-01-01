@@ -233,6 +233,7 @@ int main(int argc, char *argv[])
     int count = 0;
     ofstream result(poutput, ios_base::binary);
     //cout << entro_len << endl;
+    /*
     for (int i=0; i<entro_len; i++)
     {
         result_c[jpeg_len] = code[i];
@@ -248,25 +249,43 @@ int main(int argc, char *argv[])
             count = 0;
         }
     }
+    */
 
-    for (int i=0; i<jpeg_len/8; i++)
+    for (int i=0; i<entro_len/8; i++)
     {
         int target = 0;
         for (int j=0; j<8; j++)
         {
-            char tmp = result_c[i*8+j]-'0';
+            /*
+            if((count>=8)&&(j==0))
+            {
+                result << '\0';
+                count = 0;
+            }
+            */
+            if (code[i*8+j] == '0')
+                count = 0;
+            else
+                count++;
+            char tmp = code[i*8+j]-'0';
             target+=tmp<<(7-j);
         }
         char target_r = (char)target;
         result << target_r;
+        if(count >= 8)
+        {
+            result << '\0';
+            count = 0;
+        }
     }
     
-    if(jpeg_len % 8 != 0)
+    int remain;
+    if((remain = entro_len % 8) != 0)
     {
         int target = 0;
-        for (int i=0; i<jpeg_len-(jpeg_len/8*8); i++)
+        for (int i=0; i<remain; i++)
         {
-            char tmp = result_c[(jpeg_len/8*8)+i]-'0';
+            char tmp = code[(entro_len-remain)+i]-'0';
             target+=tmp<<(7-i);
         }
         char target_r = (char)target;
